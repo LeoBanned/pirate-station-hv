@@ -1,5 +1,5 @@
 @echo off
-:: HV-Launcher By SOULX3XSOULX3XSOULX3XSOULX3XSOULX3XSOULX3X
+:: HV-Launcher By SOULX3X
 set "VERSION=4.2"
 
 :: Custom EXE Support
