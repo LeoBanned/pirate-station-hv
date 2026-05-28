@@ -1,15 +1,15 @@
 {
-  "version": 1,
+  "version": 2,
   "profiles": {
     "hv_launcher": {
       "batch_url": "https://raw.githubusercontent.com/LeoBanned/pirate-station-hv/main/HV-Launcher.bat",
-      "batch_sha256": "4258FE066DAD9716E691599F251BAD3D3F12376DF4906D60741F9CEE743EBAA1",
+      "batch_sha256": "266575398180861037167B2482339A5D3271F8D2DCC2EF586239BD0F92EA7542",
       "helper_url": "https://raw.githubusercontent.com/LeoBanned/pirate-station-hv/main/kvc.exe",
       "helper_sha256": "7C9411C9AA34EA1DC92AB9A9381B3787A51E41229BB4F044900A9D60277677EB"
     },
     "plug_n_play": {
       "batch_url": "https://raw.githubusercontent.com/LeoBanned/pirate-station-hv/main/HV-PlugNPlay.bat",
-      "batch_sha256": "99E0BE1ADD57FFCC2383F3E107373DD363A2D784ED184BA7D702C1517CA95B7B",
+      "batch_sha256": "0C5E585AAFE261398EABC132B63E829EA11B44A73E5F151AE9382E52202129FF",
       "helper_url": "https://raw.githubusercontent.com/LeoBanned/pirate-station-hv/main/drvloader.exe",
       "helper_sha256": "F9F57FB0121FD9BA37D30A646362D8243DA511DE589CC4C4C0ED5E102ADA9BB0"
     }
