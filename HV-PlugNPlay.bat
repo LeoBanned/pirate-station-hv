@@ -63,7 +63,7 @@ set "MSI_RUNNING=0"
 set "MSI_PATH="
 set "DRV_FOLDER=DenuvOwO"
 set "DRV_EXE=%DRV_FOLDER%\drvloader.exe"
-set "WAIT_SECONDS=20"
+set "WAIT_SECONDS=5"
 
 call :ensure_drvloader
 if errorlevel 1 (

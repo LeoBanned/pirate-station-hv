@@ -4,7 +4,6 @@ set "VERSION=4.2"
 
 :: Custom EXE Support
 set "CUSTOM_EXE_SUPPORT="
-set "POST_LAUNCH_WAIT=20"
 
 :: Flag to track if DSE was turned off by this script
 set "DSE_WAS_OFF=0"
@@ -331,8 +330,7 @@ timeout /t 3 /nobreak >nul
 goto WAIT_LOADER_LOOP
 
 :LOADER_STARTED
-echo %CYAN%Waiting %POST_LAUNCH_WAIT% seconds before cleanup...%RESET%
-timeout /t %POST_LAUNCH_WAIT% /nobreak >nul
+timeout /t 3 /nobreak >nul
 
 echo.
 echo %BOLD%%GREEN%Loader started successfully. Running cleanup...%RESET%
