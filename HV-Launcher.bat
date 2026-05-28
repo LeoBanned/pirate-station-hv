@@ -1,6 +1,6 @@
 @echo off
 :: HV-Launcher By SOULX3X
-set "VERSION=3.2.0123123"
+set "VERSION=4.2"
 
 :: Custom EXE Support
 set "CUSTOM_EXE_SUPPORT="
@@ -37,6 +37,7 @@ echo %BOLD%%CYAN%================================================%RESET%
 echo.
 
 :: Check for administrator privileges
+
 fltmc >nul 2>&1
 if errorlevel 1 (
     echo.
@@ -45,7 +46,7 @@ if errorlevel 1 (
     echo A UAC prompt will appear. Please click "Yes".
     echo.
 
-    powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -ArgumentList '__MINIMIZED__' -Verb RunAs -WindowStyle Minimized"
+    powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Start-Process -FilePath \"%~f0\" -ArgumentList '__MINIMIZED__' -Verb RunAs -WindowStyle Minimized"
     exit /b
 )
 
@@ -69,7 +70,7 @@ echo.
 
 :: Check Core Isolation (Memory Integrity)
 echo.
-echo %BOLD%%BLUE%[STEP 1/7]%RESET% %YELLOW%Checking Core Isolation (Memory Integrity)...%RESET%
+echo %BOLD%%BLUE%[STEP 1/9]%RESET% %YELLOW%Checking Core Isolation (Memory Integrity)...%RESET%
 
 set "CI="
 
@@ -97,12 +98,12 @@ echo and run this script again.
 echo.
 call :LOG_ERROR "Core Isolation (Memory Integrity) is ON"
 pause
-goto END
+goto CLEANUP_EXIT
 
 :KVC_CHECK
 :: Ensure kvc.exe exists (download if missing)
 echo.
-echo %BOLD%%BLUE%[STEP 2/7]%RESET% %YELLOW%Checking for kvc.exe...%RESET%
+echo %BOLD%%BLUE%[STEP 2/9]%RESET% %YELLOW%Checking for kvc.exe...%RESET%
 if exist "kvc.exe" goto KVC_READY
 
 echo.
@@ -196,7 +197,7 @@ echo.
 :: Check MSI Afterburner
 :CHECK_MSI
 echo.
-echo %BOLD%%BLUE%[STEP 3/7]%RESET% %YELLOW%Checking MSI Afterburner status...%RESET%
+echo %BOLD%%BLUE%[STEP 3/9]%RESET% %YELLOW%Checking MSI Afterburner status...%RESET%
 set "MSI_RUNNING=0"
 set "MSI_PATH="
 
@@ -215,27 +216,73 @@ if %errorlevel%==0 (
     echo %GREEN%MSI Afterburner is not running.%RESET%
 )
 
-echo %GREEN%Core Isolation is disabled. Continuing...%RESET%
+:: Check RTSS and related processes
+:CHECK_RTSS
 echo.
+echo %BOLD%%BLUE%[STEP 4/9]%RESET% %YELLOW%Checking RTSS related processes...%RESET%
+set "RTSS_RUNNING=0"
+
+tasklist /FI "IMAGENAME eq RTSS.exe" | find /I "RTSS.exe" >nul
+if %errorlevel%==0 set "RTSS_RUNNING=1"
+
+tasklist /FI "IMAGENAME eq EncoderServer.exe" | find /I "EncoderServer.exe" >nul
+if %errorlevel%==0 set "RTSS_RUNNING=1"
+
+tasklist /FI "IMAGENAME eq RTSSHooksLoader64.exe" | find /I "RTSSHooksLoader64.exe" >nul
+if %errorlevel%==0 set "RTSS_RUNNING=1"
+
+if "%RTSS_RUNNING%"=="1" (
+    echo %YELLOW%RTSS is running. Closing it...%RESET%
+    taskkill /IM RTSS.exe /F >nul 2>&1
+    taskkill /IM EncoderServer.exe /F >nul 2>&1
+    taskkill /IM RTSSHooksLoader64.exe /F >nul 2>&1
+) else (
+    echo %GREEN%RTSS is not running.%RESET%
+)
+
+:: Check Vanguard
+:CHECK_VANGUARD
+echo.
+echo %BOLD%%BLUE%[STEP 5/9]%RESET% %YELLOW%Checking Vanguard status...%RESET%
+set "VANGUARD_RUNNING=0"
+set "VANGUARD_PATH="
+
+tasklist /FI "IMAGENAME eq vgtray.exe" | find /I "vgtray.exe" >nul
+
+if %errorlevel%==0 (
+    echo %YELLOW%Vanguard is running. Closing it...%RESET%
+    set "VANGUARD_RUNNING=1"
+    taskkill /IM vgtray.exe /F >nul 2>&1
+) else (
+    echo %GREEN%Vanguard is not running.%RESET%
+)
 
 timeout /t 0 /nobreak >nul
 
 :: Disable DSE
 echo.
-echo %BOLD%%BLUE%[STEP 4/7]%RESET% %YELLOW%Disabling DSE...%RESET%
+echo %BOLD%%BLUE%[STEP 6/9]%RESET% %YELLOW%Disabling DSE...%RESET%
 kvc.exe dse off --safe
 if errorlevel 1 (
-    call :LOG_ERROR "Failed to disable DSE (kvc.exe dse off --safe)"
-    echo.
-    echo %RED%ERROR: Failed to disable DSE.%RESET%
-    pause
-    goto CLEANUP_EXIT
+    echo %YELLOW%Safe method failed, trying standard method...%RESET%
+    kvc.exe dse off
+    if errorlevel 1 (
+        call :LOG_ERROR "Failed to disable DSE (both safe and standard methods failed)"
+        echo %RED%ERROR: Failed to disable DSE.%RESET%
+        pause
+        goto CLEANUP_EXIT
+    ) else (
+        set "STANDARD_DSE=1"
+        set "DSE_WAS_OFF=1"
+        echo DSE Disabled Successfully
+    )
+) else (
+    set "DSE_WAS_OFF=1"
+    echo DSE Disabled Successfully
 )
-set "DSE_WAS_OFF=1"
-
 :: Find loader executable
 echo.
-echo %BOLD%%BLUE%[STEP 5/7]%RESET% %YELLOW%Finding loader executable...%RESET%
+echo %BOLD%%BLUE%[STEP 7/9]%RESET% %YELLOW%Finding loader executable...%RESET%
 set "loader="
 
 :: Try to find loader in order of preference
@@ -250,7 +297,7 @@ if exist "%CUSTOM_EXE_SUPPORT%" set "loader=%CUSTOM_EXE_SUPPORT%"
 :: If no preferred loader found, search for the largest executable
 if not defined loader (
     for /f "delims=" %%A in ('dir /b /A:-D /O:-S *.exe 2^>nul') do (
-        if /i not "%%A"=="kvc.exe" if /i not "%%A"=="UnityCrashHandler64.exe" if /i not "%%A"=="7zr.exe" (
+        if /i not "%%A"=="kvc.exe" if /i not "%%A"=="UbisoftConnectInstaller.exe" if /i not "%%A"=="UnityCrashHandler64.exe" if /i not "%%A"=="7zr.exe" (
             set "loader=%%A"
             goto FOUND_LOADER
         )
@@ -263,7 +310,7 @@ if not defined loader (
     echo.
     echo %RED%ERROR: No executable found!%RESET%
     pause
-    goto RESTORE_MSI
+    goto CLEANUP_EXIT
 )
 
 echo %GREEN%Found: %RESET%%loader%
@@ -285,61 +332,74 @@ goto WAIT_LOADER_LOOP
 :LOADER_STARTED
 timeout /t 3 /nobreak >nul
 
-:: Enable DSE
 echo.
-echo %BOLD%%BLUE%[STEP 6/7]%RESET% %YELLOW%Enabling DSE...%RESET%
-kvc.exe dse on --safe
-set "DSE_WAS_OFF=0"
+echo %BOLD%%GREEN%Loader started successfully. Running cleanup...%RESET%
+goto CLEANUP_EXIT
 
-timeout /t 0 /nobreak >nul
-
-:: Restore MSI Afterburner
-:RESTORE_MSI
-echo.
-echo %CYAN%Restarting MSI Afterburner...%RESET%
-if defined MSI_PATH (
-    start "" "%MSI_PATH%"
-) else (
-    if exist "C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe" (
-        start "" "C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe"
-    ) else (
-        if exist "C:\Program Files\MSI Afterburner\MSIAfterburner.exe" (
-            start "" "C:\Program Files\MSI Afterburner\MSIAfterburner.exe"
+:: Cleanup routine - always runs on exit
+:CLEANUP_EXIT
+:: Step 8/9: Turn DSE back on if we turned it off
+if "%DSE_WAS_OFF%"=="1" (
+    echo.
+    echo %BOLD%%BLUE%[STEP 8/9]%RESET% %YELLOW%Enabling DSE...%RESET%
+    if "%STANDARD_DSE%"=="1" (
+        kvc.exe dse on
+        if errorlevel 1 (
+            call :LOG_ERROR "Failed to enable DSE (standard method failed)"
+            echo %RED%ERROR: Failed to enable DSE.%RESET%
         ) else (
-            echo %YELLOW%WARNING: MSI Afterburner path could not be detected. Please launch it manually.%RESET%
+            echo DSE Enabled Successfully
+        )
+    ) else (
+        kvc.exe dse on --safe
+        if errorlevel 1 (
+            echo %YELLOW%Safe method failed, trying standard method...%RESET%
+            kvc.exe dse on
+            if errorlevel 1 (
+                call :LOG_ERROR "Failed to enable DSE (both safe and standard methods failed)"
+                echo %RED%ERROR: Failed to enable DSE.%RESET%
+            ) else (
+                echo DSE Enabled Successfully
+            )
+        ) else (
+            echo DSE Enabled Successfully
         )
     )
 )
+goto RESTORE_MSI
+
+:: Restore MSI Afterburner
+:RESTORE_MSI
+if "%MSI_RUNNING%"=="1" (
+    echo.
+    echo %CYAN%Restoring MSI Afterburner...%RESET%
+    if defined MSI_PATH (
+        start "" "%MSI_PATH%"
+        echo %GREEN%MSI Afterburner restored.%RESET%
+    ) else (
+        if exist "C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe" (
+            start "" "C:\Program Files (x86)\MSI Afterburner\MSIAfterburner.exe"
+            echo %GREEN%MSI Afterburner restored.%RESET%
+        ) else (
+            if exist "C:\Program Files\MSI Afterburner\MSIAfterburner.exe" (
+                start "" "C:\Program Files\MSI Afterburner\MSIAfterburner.exe"
+                echo %GREEN%MSI Afterburner restored.%RESET%
+            ) else (
+                echo %YELLOW%WARNING: MSI Afterburner path could not be detected. Please launch it manually.%RESET%
+            )
+        )
+    )
+)
+goto REMOVE_EXCLUSIONS
 
 :: Remove Windows Defender exclusions
+:REMOVE_EXCLUSIONS
 echo.
-echo %BOLD%%BLUE%[STEP 7/7]%RESET% %YELLOW%Removing Windows Defender exclusions for kvc.exe...%RESET%
+echo %BOLD%%BLUE%[STEP 9/9]%RESET% %YELLOW%Removing Windows Defender exclusions for kvc.exe...%RESET%
 set "KVC_PATH=%~dp0kvc.exe"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[string[]]$excl = (Get-MpPreference).ExclusionPath; if ($excl -contains $env:KVC_PATH) { Remove-MpPreference -ExclusionPath $env:KVC_PATH }" >nul 2>&1
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-MpPreference -ExclusionProcess 'kvc.exe' -ErrorAction SilentlyContinue" >nul 2>&1
 echo %GREEN%Defender exclusions removed.%RESET%
-
-echo.
-echo %BOLD%%GREEN%Process completed successfully.%RESET%
-goto CLEANUP_EXIT
-
-:END
-exit /b
-
-:: Cleanup routine - always runs on exit
-:CLEANUP_EXIT
-:: Turn DSE back on if we turned it off
-if "%DSE_WAS_OFF%"=="1" (
-    echo.
-    echo %CYAN%Restoring DSE...%RESET%
-    kvc.exe dse on --safe
-    if errorlevel 1 (
-        call :LOG_ERROR "Failed to re-enable DSE (kvc.exe dse on --safe)"
-        echo %YELLOW%WARNING: Failed to re-enable DSE.%RESET%
-    ) else (
-        echo %GREEN%DSE re-enabled.%RESET%
-    )
-)
 
 exit /b
 
@@ -353,4 +413,3 @@ if not exist "%LOG_FILE%" (
     echo ============================================>> "%LOG_FILE%"
 )
 echo [%DATE% %TIME%] [Version: %VERSION%] ERROR: %~1>> "%LOG_FILE%"
-goto :eof
