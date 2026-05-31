@@ -1,6 +1,6 @@
 @echo off
 :: HV-Launcher By SOULX3X
-set "VERSION=4.2"
+set "VERSION=5.0"
 
 :: Custom EXE Support
 set "CUSTOM_EXE_SUPPORT="
@@ -40,6 +40,16 @@ echo.
 
 fltmc >nul 2>&1
 if errorlevel 1 (
+    schtasks /query /tn "HVLauncherAdmin" >nul 2>&1
+    if not errorlevel 1 (
+        if not exist "%temp%\hv_admin_lock" (
+            echo 1 > "%temp%\hv_admin_lock"
+            schtasks /run /tn "HVLauncherAdmin" >nul 2>&1
+            exit /b
+        )
+        del "%temp%\hv_admin_lock" >nul 2>&1
+    )
+
     echo.
     echo This script requires administrator privileges.
     echo.
@@ -49,6 +59,8 @@ if errorlevel 1 (
     powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Start-Process -FilePath \"%~f0\" -ArgumentList '__MINIMIZED__' -Verb RunAs -WindowStyle Minimized"
     exit /b
 )
+
+if exist "%temp%\hv_admin_lock" del "%temp%\hv_admin_lock" >nul 2>&1
 
 if /i not "%~1"=="__MINIMIZED__" (
     start "" /min "%~f0" __MINIMIZED__
@@ -204,7 +216,7 @@ set "MSI_PATH="
 tasklist /FI "IMAGENAME eq MSIAfterburner.exe" | find /I "MSIAfterburner.exe" >nul
 
 if %errorlevel%==0 (
-    echo %YELLOW%MSI Afterburner is running. Closing it...%RESET%
+    echo %GREEN%MSI Afterburner is running. Closing it...%RESET%
     set "MSI_RUNNING=1"
 
     for /f "tokens=2 delims==" %%A in (
@@ -232,7 +244,7 @@ tasklist /FI "IMAGENAME eq RTSSHooksLoader64.exe" | find /I "RTSSHooksLoader64.e
 if %errorlevel%==0 set "RTSS_RUNNING=1"
 
 if "%RTSS_RUNNING%"=="1" (
-    echo %YELLOW%RTSS is running. Closing it...%RESET%
+    echo %GREEN%RTSS is running. Closing it...%RESET%
     taskkill /IM RTSS.exe /F >nul 2>&1
     taskkill /IM EncoderServer.exe /F >nul 2>&1
     taskkill /IM RTSSHooksLoader64.exe /F >nul 2>&1
@@ -250,7 +262,7 @@ set "VANGUARD_PATH="
 tasklist /FI "IMAGENAME eq vgtray.exe" | find /I "vgtray.exe" >nul
 
 if %errorlevel%==0 (
-    echo %YELLOW%Vanguard is running. Closing it...%RESET%
+    echo %GREEN%Vanguard is running. Closing it...%RESET%
     set "VANGUARD_RUNNING=1"
     taskkill /IM vgtray.exe /F >nul 2>&1
 ) else (
@@ -401,7 +413,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "[string[]]$excl = (Get-M
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Remove-MpPreference -ExclusionProcess 'kvc.exe' -ErrorAction SilentlyContinue" >nul 2>&1
 echo %GREEN%Defender exclusions removed.%RESET%
 
-exit /b
+exit
 
 :: Error logging subroutine - creates log file only on first error
 :LOG_ERROR

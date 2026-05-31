@@ -3,7 +3,7 @@
   "profiles": {
     "hv_launcher": {
       "batch_url": "https://raw.githubusercontent.com/LeoBanned/pirate-station-hv/main/HV-Launcher.bat",
-      "batch_sha256": "D9FD908AFCAF48C8C3B1270E1143E283CDEBB4414053B1606DE53029A0CEC0BF"
+      "batch_sha256": "8BDE8FB9A0F6AEE6F609462BEEA0E44ED369C970A5541E2CB698B32400E76DA6"
     },
     "plug_n_play": {
       "batch_url": "https://raw.githubusercontent.com/LeoBanned/pirate-station-hv/main/HV-PlugNPlay.bat",
